@@ -1320,12 +1320,17 @@
         let autoCalculateTimeout = null;
 
         // Utility function to safely execute calculations
-        function safeCalculate(callback) {
+        function safeCalculate(callback, fallback = null) {
             try {
-                return callback();
+                const result = callback();
+                // Check for invalid numbers
+                if (result !== null && result !== undefined && !isNaN(result)) {
+                    return result;
+                }
+                return fallback;
             } catch (error) {
                 console.error('Calculation error:', error);
-                return null;
+                return fallback;
             }
         }
 
@@ -1342,10 +1347,16 @@
                 return null;
             }
             
+            // Check if Chart is available
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded');
+                return null;
+            }
+            
             try {
                 return new Chart(ctx, config);
             } catch (error) {
-                console.error('Chart error:', error);
+                console.error('Chart creation error:', error);
                 return null;
             }
         }
@@ -1478,59 +1489,52 @@
             // New function to calculate optimal retirement age
             function calculateOptimalRetirementAge() {
                 return safeCalculate(() => {
-                    // Get input values with proper sanitization
-                    const age = Math.max(0, parseInt(currentAge.value) || 45);
+                    // Get input values with proper sanitization and defaults
+                    const age = Math.max(18, Math.min(100, parseInt(currentAge.value) || 45));
                     const superBalance = Math.max(0, parseFloat(currentSuper.value) || 0);
                     const income = Math.max(0, parseFloat(currentIncome.value) || 0);
                     const additionalContributionValue = Math.max(0, parseFloat(additionalContribution.value) || 0);
                     const employerContribution = income * AUSTRALIAN_RULES.SUPER_CONTRIBUTION_RATE_2024;
                     const totalContribution = employerContribution + additionalContributionValue;
                     const expenses = Math.max(0, parseFloat(currentExpenses.value) || 0);
-                    const retirementExpenseRate = Math.max(0, (parseFloat(retirementExpenses.value) || 75) / 100);
+                    const retirementExpenseRate = Math.max(0.5, Math.min(1.5, (parseFloat(retirementExpenses.value) || 75) / 100));
                     const healthcare = Math.max(0, parseFloat(healthcareCosts.value) || 0);
                     const travel = Math.max(0, parseFloat(travelBudget.value) || 0);
                     const otherCosts = Math.max(0, parseFloat(otherRetirementCosts.value) || 0);
-                    const inflationRate = Math.max(0, (parseFloat(inflation.value) || 2.5) / 100);
-                    const returnRate = Math.max(-0.9, Math.min(5, (parseFloat(investmentReturn.value) || 7) / 100)); // Limit to reasonable bounds
-                    const expectancy = Math.max(age + 1, parseInt(lifeExpectancy.value) || 90);
+                    const inflationRate = Math.max(0, Math.min(0.1, (parseFloat(inflation.value) || 2.5) / 100));
+                    const returnRate = Math.max(-0.5, Math.min(0.2, (parseFloat(investmentReturn.value) || 7) / 100));
+                    const expectancy = Math.max(age + 10, Math.min(120, parseInt(lifeExpectancy.value) || 90));
                     
                     // Calculate base retirement expenses (adjusted for inflation)
                     const baseRetirementExpenses = (expenses * retirementExpenseRate) + healthcare + travel + otherCosts;
                     
-                    // Calculate required retirement savings using the 4% rule - FIXED division by zero
-                    const requiredSavings = baseRetirementExpenses > 0 ? baseRetirementExpenses / 0.04 : 0;
+                    // Calculate required retirement savings using the 4% rule with safety check
+                    const requiredSavings = baseRetirementExpenses > 0 ? baseRetirementExpenses / 0.04 : expenses * 10;
                     
                     // Calculate years needed to reach required savings
                     let projectedSuper = superBalance;
                     let years = 0;
-                    let maxYears = 40; // Maximum working years to consider
+                    let maxYears = Math.min(50, expectancy - age - 5); // Reasonable maximum
                     
-                    // FIXED: Added safeguards against infinite loops
-                    while (projectedSuper < requiredSavings && years < maxYears && returnRate > -0.9) {
+                    while (projectedSuper < requiredSavings && years < maxYears && returnRate > -0.5) {
                         projectedSuper = projectedSuper * (1 + returnRate) + totalContribution;
                         years++;
                         
                         // Adjust required savings for inflation
                         const inflationAdjustedRequiredSavings = requiredSavings * Math.pow(1 + inflationRate, years);
                         
-                        if (projectedSuper >= inflationAdjustedRequiredSavings) {
+                        if (projectedSuper >= inflationAdjustedRequiredSavings || years >= maxYears) {
                             break;
                         }
                     }
                     
-                    // Calculate optimal retirement age
+                    // Calculate optimal retirement age with constraints
                     let optimalAge = age + years;
+                    optimalAge = Math.max(optimalAge, AUSTRALIAN_RULES.PRESERVATION_AGE);
+                    optimalAge = Math.min(optimalAge, expectancy - 5, 75);
                     
-                    // Apply constraints
-                    optimalAge = Math.max(optimalAge, AUSTRALIAN_RULES.PRESERVATION_AGE); // Can't retire before preservation age
-                    optimalAge = Math.min(optimalAge, expectancy - 5); // Leave at least 5 years to enjoy retirement
-                    optimalAge = Math.min(optimalAge, 75); // Reasonable maximum retirement age
-                    
-                    // Round to nearest whole number
-                    optimalAge = Math.round(optimalAge);
-                    
-                    return optimalAge;
-                }) || 65; // Default fallback
+                    return Math.round(optimalAge);
+                }) || 65;
             }
             
             // Event listener for calculating optimal retirement age
@@ -1743,6 +1747,13 @@
                     }
                 }
                 
+                // Investment return validation with reasonable bounds
+                const investmentReturnValue = parseFloat(investmentReturn.value);
+                if (isNaN(investmentReturnValue) || investmentReturnValue < -50 || investmentReturnValue > 50) {
+                    errors.push("Investment return must be between -50% and 50%");
+                    investmentReturn.classList.add('input-error');
+                }
+                
                 // Show validation summary if there are errors
                 if (errors.length > 0) {
                     validationErrors.innerHTML = '';
@@ -1793,7 +1804,7 @@
                     const retireAge = Math.max(age + 1, parseInt(retirementAge.value) || 65);
                     const expectancy = Math.max(retireAge + 1, parseInt(lifeExpectancy.value) || 90);
                     const inflationRate = Math.max(0, (parseFloat(inflation.value) || 2.5) / 100);
-                    const returnRate = Math.max(-0.9, Math.min(5, (parseFloat(investmentReturn.value) || 7) / 100)); // Limit to reasonable bounds
+                    const returnRate = Math.max(-0.5, Math.min(0.2, (parseFloat(investmentReturn.value) || 7) / 100)); // Limit to reasonable bounds
                     const superBalance = Math.max(0, parseFloat(currentSuper.value) || 0);
                     const income = Math.max(0, parseFloat(currentIncome.value) || 0);
                     const additionalContributionValue = Math.max(0, parseFloat(additionalContribution.value) || 0);
