@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Australian Retirement Financial Planner</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -699,6 +700,14 @@
         .use-min-calculated-btn:hover {
             background: #e67e22;
         }
+        
+        .shortfall {
+            color: var(--danger);
+        }
+        
+        .surplus {
+            color: var(--success);
+        }
     </style>
 </head>
 <body>
@@ -1114,7 +1123,7 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Shortfall</div>
-                                    <div class="scenario-value" id="scenario-55-shortfall">$18,000</div>
+                                    <div class="scenario-value shortfall" id="scenario-55-shortfall">$18,000</div>
                                 </div>
                             </div>
                             <div class="recommendation warning">
@@ -1141,7 +1150,7 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Shortfall</div>
-                                    <div class="scenario-value" id="scenario-60-shortfall">$6,000</div>
+                                    <div class="scenario-value shortfall" id="scenario-60-shortfall">$6,000</div>
                                 </div>
                             </div>
                             <div class="recommendation">
@@ -1168,7 +1177,7 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value" id="scenario-65-surplus">$8,000</div>
+                                    <div class="scenario-value surplus" id="scenario-65-surplus">$8,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1195,7 +1204,7 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value" id="scenario-67-surplus">$15,000</div>
+                                    <div class="scenario-value surplus" id="scenario-67-surplus">$15,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1222,7 +1231,7 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value" id="scenario-70-surplus">$22,000</div>
+                                    <div class="scenario-value surplus" id="scenario-70-surplus">$22,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1301,7 +1310,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Australian Financial Constants (2024)
         const AUSTRALIAN_RULES = {
@@ -1359,6 +1367,24 @@
         let allocationChart = null;
         let autoCalculateTimeout = null;
 
+        // FIXED: Proper currency formatting function
+        function formatCurrency(amount) {
+            try {
+                if (amount === null || amount === undefined || isNaN(amount)) {
+                    return '$0';
+                }
+                return new Intl.NumberFormat('en-AU', {
+                    style: 'currency',
+                    currency: 'AUD',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount);
+            } catch (error) {
+                console.error('Currency formatting error:', error);
+                return '$0';
+            }
+        }
+
         // Utility function to safely execute calculations
         function safeCalculate(callback, fallback = null) {
             try {
@@ -1404,7 +1430,6 @@
         // Loading state management
         function setLoadingState(isLoading) {
             document.body.style.cursor = isLoading ? 'wait' : 'default';
-            // Disable inputs during calculation if needed
         }
 
         // Initialize function to set up event listeners
@@ -1919,7 +1944,7 @@
                     const retireAge = Math.max(age + 1, parseInt(retirementAge.value) || 65);
                     const expectancy = Math.max(retireAge + 1, parseInt(lifeExpectancy.value) || 90);
                     const inflationRate = Math.max(0, (parseFloat(inflation.value) || 2.5) / 100);
-                    const returnRate = Math.max(-0.5, Math.min(0.2, (parseFloat(investmentReturn.value) || 7) / 100)); // Limit to reasonable bounds
+                    const returnRate = Math.max(-0.5, Math.min(0.2, (parseFloat(investmentReturn.value) || 7) / 100));
                     const superBalance = Math.max(0, parseFloat(currentSuper.value) || 0);
                     const income = Math.max(0, parseFloat(currentIncome.value) || 0);
                     const additionalContributionValue = Math.max(0, parseFloat(additionalContribution.value) || 0);
@@ -1991,24 +2016,25 @@
                     const totalLiabilities = residenceDebtValue + investmentPropsDebtValue + personalDebtValue;
                     const netWorth = totalAssets - totalLiabilities;
                     
+                    // FIXED: Update net worth display with proper formatting
                     netWorthAssets.textContent = formatCurrency(totalAssets);
                     netWorthLiabilities.textContent = formatCurrency(totalLiabilities);
                     netWorthTotal.textContent = formatCurrency(netWorth);
                     
-                    // Calculate retirement scenarios
-                    calculateScenario(55, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
+                    // FIXED: Calculate and display all scenarios properly
+                    calculateAndDisplayScenario(55, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
                                     expenses, retirementExpenseRate, healthcare, travel, otherCosts, partnerData, downsizingData, ttrData,
                                     investmentPropsValue, residenceValue, otherAssetsValue, smsfData, isHighIncomeEarner);
-                    calculateScenario(60, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
+                    calculateAndDisplayScenario(60, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
                                     expenses, retirementExpenseRate, healthcare, travel, otherCosts, partnerData, downsizingData, ttrData,
                                     investmentPropsValue, residenceValue, otherAssetsValue, smsfData, isHighIncomeEarner);
-                    calculateScenario(65, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
+                    calculateAndDisplayScenario(65, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
                                     expenses, retirementExpenseRate, healthcare, travel, otherCosts, partnerData, downsizingData, ttrData,
                                     investmentPropsValue, residenceValue, otherAssetsValue, smsfData, isHighIncomeEarner);
-                    calculateScenario(67, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
+                    calculateAndDisplayScenario(67, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
                                     expenses, retirementExpenseRate, healthcare, travel, otherCosts, partnerData, downsizingData, ttrData,
                                     investmentPropsValue, residenceValue, otherAssetsValue, smsfData, isHighIncomeEarner);
-                    calculateScenario(70, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
+                    calculateAndDisplayScenario(70, age, expectancy, inflationRate, returnRate, superBalance, totalContribution, 
                                     expenses, retirementExpenseRate, healthcare, travel, otherCosts, partnerData, downsizingData, ttrData,
                                     investmentPropsValue, residenceValue, otherAssetsValue, smsfData, isHighIncomeEarner);
                     
@@ -2033,7 +2059,8 @@
                 });
             }
             
-            function calculateScenario(scenarioAge, currentAge, lifeExpectancy, inflationRate, returnRate, 
+            // FIXED: New function that calculates AND displays scenario results
+            function calculateAndDisplayScenario(scenarioAge, currentAge, lifeExpectancy, inflationRate, returnRate, 
                                      superBalance, contribution, expenses, retirementExpenseRate, healthcare, travel, otherCosts,
                                      partnerData, downsizingData, ttrData, investmentPropsValue, residenceValue, otherAssetsValue,
                                      smsfData, isHighIncomeEarner) {
@@ -2138,31 +2165,34 @@
                     const shortfall = Math.max(0, futureRetirementExpenses - totalRetirementIncome);
                     const surplus = Math.max(0, totalRetirementIncome - futureRetirementExpenses);
                     
-                    // Update scenario display
+                    // FIXED: Update scenario display with proper formatting
                     const yearsElement = document.getElementById(`scenario-${scenarioAge}-years`);
                     const superElement = document.getElementById(`scenario-${scenarioAge}-super`);
                     const incomeElement = document.getElementById(`scenario-${scenarioAge}-income`);
+                    const shortfallElement = document.getElementById(`scenario-${scenarioAge}-shortfall`);
+                    const surplusElement = document.getElementById(`scenario-${scenarioAge}-surplus`);
                     
+                    // Update all elements
                     if (yearsElement) yearsElement.textContent = yearsToRetirement;
                     if (superElement) superElement.textContent = formatCurrency(projectedSuper);
                     if (incomeElement) incomeElement.textContent = formatCurrency(totalRetirementIncome);
                     
                     // Handle shortfall/surplus display
-                    const shortfallElement = document.getElementById(`scenario-${scenarioAge}-shortfall`);
-                    const surplusElement = document.getElementById(`scenario-${scenarioAge}-surplus`);
-                    
-                    if (shortfall > 0) {
-                        if (shortfallElement) {
+                    if (shortfallElement && surplusElement) {
+                        // Reset both elements
+                        shortfallElement.style.display = 'none';
+                        surplusElement.style.display = 'none';
+                        
+                        // Show appropriate element
+                        if (shortfall > 0) {
                             shortfallElement.textContent = formatCurrency(shortfall);
                             shortfallElement.style.display = 'block';
-                        }
-                        if (surplusElement) surplusElement.style.display = 'none';
-                    } else {
-                        if (surplusElement) {
+                            shortfallElement.className = 'scenario-value shortfall';
+                        } else if (surplus > 0) {
                             surplusElement.textContent = formatCurrency(surplus);
                             surplusElement.style.display = 'block';
+                            surplusElement.className = 'scenario-value surplus';
                         }
-                        if (shortfallElement) shortfallElement.style.display = 'none';
                     }
                     
                     return {
@@ -2491,34 +2521,6 @@
                         allocationChart.destroy();
                     }
                     
-                    // Create chart safely
-                    allocationChart = safeChartUpdate(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Growth Assets', 'Defensive Assets'],
-                            datasets: [{
-                                data: [50, 50], // Default fallback
-                                backgroundColor: ['#3498db', '#2ecc71'],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom'
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Recommended Asset Allocation'
-                                }
-                            }
-                        }
-                    });
-                    
-                    if (!allocationChart) return;
-                    
                     // Define allocations based on risk profile and age
                     let growth, defensive;
                     
@@ -2557,9 +2559,31 @@
                     growth = Math.max(0, Math.min(100, growth));
                     defensive = Math.max(0, Math.min(100, defensive));
                     
-                    // Update chart data
-                    allocationChart.data.datasets[0].data = [growth, defensive];
-                    allocationChart.update();
+                    // Create chart safely
+                    allocationChart = safeChartUpdate(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Growth Assets', 'Defensive Assets'],
+                            datasets: [{
+                                data: [growth, defensive],
+                                backgroundColor: ['#3498db', '#2ecc71'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Recommended Asset Allocation'
+                                }
+                            }
+                        }
+                    });
                 });
             }
             
@@ -2571,59 +2595,6 @@
                     if (retirementChart) {
                         retirementChart.destroy();
                     }
-                    
-                    // Create chart safely first
-                    retirementChart = safeChartUpdate(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Age 55', 'Age 60', 'Age 65', 'Age 67', 'Age 70'],
-                            datasets: [
-                                {
-                                    label: 'Projected Super Balance',
-                                    data: [0, 0, 0, 0, 0], // Default fallback
-                                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
-                                    borderColor: 'rgba(52, 152, 219, 1)',
-                                    borderWidth: 1
-                                },
-                                {
-                                    label: 'Annual Retirement Income',
-                                    data: [0, 0, 0, 0, 0], // Default fallback
-                                    backgroundColor: 'rgba(46, 204, 113, 0.7)',
-                                    borderColor: 'rgba(46, 204, 113, 1)',
-                                    borderWidth: 1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                title: {
-                                    display: true,
-                                    text: 'Retirement Projections by Age'
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    ticks: {
-                                        callback: function(value) {
-                                            return formatCurrency(value);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                    
-                    if (!retirementChart) return;
                     
                     // Prepare data for different retirement ages
                     const labels = ['Age 55', 'Age 60', 'Age 65', 'Age 67', 'Age 70'];
@@ -2660,10 +2631,56 @@
                         incomeData.push(retirementIncome);
                     }
                     
-                    // Update chart data
-                    retirementChart.data.datasets[0].data = superData;
-                    retirementChart.data.datasets[1].data = incomeData;
-                    retirementChart.update();
+                    // Create chart safely
+                    retirementChart = safeChartUpdate(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Projected Super Balance',
+                                    data: superData,
+                                    backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                                    borderColor: 'rgba(52, 152, 219, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Annual Retirement Income',
+                                    data: incomeData,
+                                    backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                                    borderColor: 'rgba(46, 204, 113, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Retirement Projections by Age'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return formatCurrency(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
                 });
             }
             
@@ -2806,18 +2823,6 @@
                         </div>
                     `;
                 });
-            }
-            
-            // Utility function to format currency
-            function formatCurrency(amount) {
-                return safeCalculate(() => {
-                    return new Intl.NumberFormat('en-AU', {
-                        style: 'currency',
-                        currency: 'AUD',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    }).format(amount);
-                }) || '$0';
             }
             
             // Save data to local storage
@@ -2999,11 +3004,9 @@
                         retirementAge: retirementAge.value,
                         currentSuper: currentSuper.value,
                         currentIncome: currentIncome.value,
-                        // Add other relevant inputs
                     },
                     results: {
                         netWorth: netWorthTotal.textContent,
-                        // Add other relevant results
                     }
                 };
                 
