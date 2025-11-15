@@ -666,6 +666,39 @@
         .use-calculated-btn:hover {
             background: #138496;
         }
+        
+        .min-retirement-section {
+            background: #fff8e1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .min-retirement-result {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-align: center;
+            border: 1px solid var(--warning);
+        }
+        
+        .min-calculated-age {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--warning);
+            margin: 10px 0;
+        }
+        
+        .use-min-calculated-btn {
+            margin-top: 10px;
+            background: var(--warning);
+        }
+        
+        .use-min-calculated-btn:hover {
+            background: #e67e22;
+        }
     </style>
 </head>
 <body>
@@ -720,14 +753,21 @@
                     
                     <div class="auto-retirement-section">
                         <h4>Auto Retirement Age Calculation</h4>
-                        <p>Based on your financial inputs, we'll calculate an optimal retirement age for you.</p>
-                        <button id="calculate-retirement-age" class="btn btn-block">Calculate Optimal Retirement Age</button>
+                        <p>Based on your financial inputs, we'll calculate retirement age options for you.</p>
+                        <button id="calculate-retirement-age" class="btn btn-block">Calculate Retirement Age Options</button>
                         
                         <div id="auto-retirement-result" class="auto-retirement-result hidden">
                             <div class="result-label">Calculated Optimal Retirement Age</div>
                             <div class="calculated-age" id="calculated-age">65</div>
                             <p>This age is calculated based on your current savings, contributions, and retirement goals.</p>
                             <button id="use-calculated-age" class="btn use-calculated-btn">Use This Age</button>
+                        </div>
+                        
+                        <div id="min-retirement-result" class="min-retirement-result hidden">
+                            <div class="result-label">Minimum Viable Retirement Age</div>
+                            <div class="min-calculated-age" id="min-calculated-age">60</div>
+                            <p>This is the earliest age you could potentially retire while maintaining basic expenses.</p>
+                            <button id="use-min-calculated-age" class="btn use-min-calculated-btn">Use This Age</button>
                         </div>
                     </div>
                     
@@ -1404,6 +1444,11 @@
             const calculatedAgeElement = document.getElementById('calculated-age');
             const useCalculatedAgeBtn = document.getElementById('use-calculated-age');
             
+            // New elements for minimum retirement age calculation
+            const minRetirementResult = document.getElementById('min-retirement-result');
+            const minCalculatedAgeElement = document.getElementById('min-calculated-age');
+            const useMinCalculatedAgeBtn = document.getElementById('use-min-calculated-age');
+            
             // Input fields
             const currentAge = document.getElementById('current-age');
             const retirementAge = document.getElementById('retirement-age');
@@ -1537,18 +1582,88 @@
                 }) || 65;
             }
             
-            // Event listener for calculating optimal retirement age
+            // New function to calculate minimum retirement age
+            function calculateMinimumRetirementAge() {
+                return safeCalculate(() => {
+                    // Get input values with proper sanitization and defaults
+                    const age = Math.max(18, Math.min(100, parseInt(currentAge.value) || 45));
+                    const superBalance = Math.max(0, parseFloat(currentSuper.value) || 0);
+                    const income = Math.max(0, parseFloat(currentIncome.value) || 0);
+                    const additionalContributionValue = Math.max(0, parseFloat(additionalContribution.value) || 0);
+                    const employerContribution = income * AUSTRALIAN_RULES.SUPER_CONTRIBUTION_RATE_2024;
+                    const totalContribution = employerContribution + additionalContributionValue;
+                    const expenses = Math.max(0, parseFloat(currentExpenses.value) || 0);
+                    const retirementExpenseRate = Math.max(0.5, Math.min(1.5, (parseFloat(retirementExpenses.value) || 75) / 100));
+                    const healthcare = Math.max(0, parseFloat(healthcareCosts.value) || 0);
+                    const travel = Math.max(0, parseFloat(travelBudget.value) || 0);
+                    const otherCosts = Math.max(0, parseFloat(otherRetirementCosts.value) || 0);
+                    const inflationRate = Math.max(0, Math.min(0.1, (parseFloat(inflation.value) || 2.5) / 100));
+                    const returnRate = Math.max(-0.5, Math.min(0.2, (parseFloat(investmentReturn.value) || 7) / 100));
+                    const expectancy = Math.max(age + 10, Math.min(120, parseInt(lifeExpectancy.value) || 90));
+                    
+                    // Calculate minimum viable retirement expenses (basic needs only)
+                    const basicRetirementExpenses = (expenses * 0.5) + healthcare; // Only basic expenses + healthcare
+                    
+                    // Calculate required retirement savings for basic needs
+                    const requiredBasicSavings = basicRetirementExpenses > 0 ? basicRetirementExpenses / 0.04 : expenses * 5;
+                    
+                    // Calculate years needed to reach basic savings
+                    let projectedSuper = superBalance;
+                    let years = 0;
+                    let maxYears = Math.min(50, expectancy - age - 5); // Reasonable maximum
+                    
+                    while (projectedSuper < requiredBasicSavings && years < maxYears && returnRate > -0.5) {
+                        projectedSuper = projectedSuper * (1 + returnRate) + totalContribution;
+                        years++;
+                        
+                        // Adjust required savings for inflation
+                        const inflationAdjustedRequiredSavings = requiredBasicSavings * Math.pow(1 + inflationRate, years);
+                        
+                        if (projectedSuper >= inflationAdjustedRequiredSavings || years >= maxYears) {
+                            break;
+                        }
+                    }
+                    
+                    // Calculate minimum retirement age with constraints
+                    let minAge = age + years;
+                    minAge = Math.max(minAge, AUSTRALIAN_RULES.PRESERVATION_AGE);
+                    minAge = Math.min(minAge, expectancy - 5, 75);
+                    
+                    return Math.round(minAge);
+                }) || 60;
+            }
+            
+            // Event listener for calculating retirement age options
             calculateRetirementAgeBtn.addEventListener('click', function() {
                 const optimalAge = calculateOptimalRetirementAge();
+                const minAge = calculateMinimumRetirementAge();
+                
                 calculatedAgeElement.textContent = optimalAge;
+                minCalculatedAgeElement.textContent = minAge;
+                
                 autoRetirementResult.classList.remove('hidden');
+                minRetirementResult.classList.remove('hidden');
             });
             
-            // Event listener for using calculated age
+            // Event listener for using calculated optimal age
             useCalculatedAgeBtn.addEventListener('click', function() {
                 const optimalAge = calculatedAgeElement.textContent;
                 retirementAge.value = optimalAge;
                 autoRetirementResult.classList.add('hidden');
+                minRetirementResult.classList.add('hidden');
+                
+                // If auto-calculation is enabled, recalculate the full plan
+                if (autoCalculateCheckbox.checked && validateInputs()) {
+                    calculateRetirement();
+                }
+            });
+            
+            // Event listener for using calculated minimum age
+            useMinCalculatedAgeBtn.addEventListener('click', function() {
+                const minAge = minCalculatedAgeElement.textContent;
+                retirementAge.value = minAge;
+                autoRetirementResult.classList.add('hidden');
+                minRetirementResult.classList.add('hidden');
                 
                 // If auto-calculation is enabled, recalculate the full plan
                 if (autoCalculateCheckbox.checked && validateInputs()) {
