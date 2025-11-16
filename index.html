@@ -49,6 +49,11 @@
             position: relative;
         }
         
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
         .compliance-banner {
             background: var(--warning);
             color: white;
@@ -67,6 +72,64 @@
         .subtitle {
             font-size: 1.2rem;
             opacity: 0.9;
+        }
+        
+        /* User Guide Button Styles */
+        .user-guide-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+        
+        .user-guide-btn:hover {
+            background: white;
+            color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .user-guide-btn i {
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .user-guide-btn {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin: 15px auto 0;
+                display: inline-flex;
+                width: auto;
+            }
+            
+            header {
+                padding-bottom: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .user-guide-btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
+            
+            .user-guide-btn i {
+                font-size: 1rem;
+            }
         }
         
         .app-container {
@@ -713,6 +776,12 @@
 <body>
     <div class="container">
         <header>
+            <!-- User Guide Button -->
+            <a href="USER_GUIDE.html" class="user-guide-btn">
+                <i class="fas fa-book"></i>
+                User Guide
+            </a>
+            
             <h1>Advanced Australian Retirement Financial Planner</h1>
             <p class="subtitle">Comprehensive retirement planning with TTR, downsizing, tax strategies & pension tests</p>
             
