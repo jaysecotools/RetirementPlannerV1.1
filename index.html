@@ -1192,7 +1192,9 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Shortfall</div>
-                                    <div class="scenario-value shortfall" id="scenario-55-shortfall">$18,000</div>
+                                    <div class="scenario-value shortfall" id="scenario-55-shortfall" style="display: none;">$18,000</div>
+                                    <div class="result-label">Retirement Surplus</div>
+                                    <div class="scenario-value surplus" id="scenario-55-surplus" style="display: none;">$0</div>
                                 </div>
                             </div>
                             <div class="recommendation warning">
@@ -1219,7 +1221,9 @@
                                 </div>
                                 <div class="scenario-card">
                                     <div class="result-label">Retirement Shortfall</div>
-                                    <div class="scenario-value shortfall" id="scenario-60-shortfall">$6,000</div>
+                                    <div class="scenario-value shortfall" id="scenario-60-shortfall" style="display: none;">$6,000</div>
+                                    <div class="result-label">Retirement Surplus</div>
+                                    <div class="scenario-value surplus" id="scenario-60-surplus" style="display: none;">$0</div>
                                 </div>
                             </div>
                             <div class="recommendation">
@@ -1245,8 +1249,10 @@
                                     <div class="scenario-value" id="scenario-65-income">$68,000</div>
                                 </div>
                                 <div class="scenario-card">
+                                    <div class="result-label">Retirement Shortfall</div>
+                                    <div class="scenario-value shortfall" id="scenario-65-shortfall" style="display: none;">$0</div>
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value surplus" id="scenario-65-surplus">$8,000</div>
+                                    <div class="scenario-value surplus" id="scenario-65-surplus" style="display: none;">$8,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1272,8 +1278,10 @@
                                     <div class="scenario-value" id="scenario-67-income">$75,000</div>
                                 </div>
                                 <div class="scenario-card">
+                                    <div class="result-label">Retirement Shortfall</div>
+                                    <div class="scenario-value shortfall" id="scenario-67-shortfall" style="display: none;">$0</div>
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value surplus" id="scenario-67-surplus">$15,000</div>
+                                    <div class="scenario-value surplus" id="scenario-67-surplus" style="display: none;">$15,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1299,8 +1307,10 @@
                                     <div class="scenario-value" id="scenario-70-income">$82,000</div>
                                 </div>
                                 <div class="scenario-card">
+                                    <div class="result-label">Retirement Shortfall</div>
+                                    <div class="scenario-value shortfall" id="scenario-70-shortfall" style="display: none;">$0</div>
                                     <div class="result-label">Retirement Surplus</div>
-                                    <div class="scenario-value surplus" id="scenario-70-surplus">$22,000</div>
+                                    <div class="scenario-value surplus" id="scenario-70-surplus" style="display: none;">$22,000</div>
                                 </div>
                             </div>
                             <div class="recommendation success">
@@ -1679,25 +1689,30 @@
         const scenario55Super = document.getElementById('scenario-55-super');
         const scenario55Income = document.getElementById('scenario-55-income');
         const scenario55Shortfall = document.getElementById('scenario-55-shortfall');
+        const scenario55Surplus = document.getElementById('scenario-55-surplus');
         
         const scenario60Years = document.getElementById('scenario-60-years');
         const scenario60Super = document.getElementById('scenario-60-super');
         const scenario60Income = document.getElementById('scenario-60-income');
         const scenario60Shortfall = document.getElementById('scenario-60-shortfall');
+        const scenario60Surplus = document.getElementById('scenario-60-surplus');
         
         const scenario65Years = document.getElementById('scenario-65-years');
         const scenario65Super = document.getElementById('scenario-65-super');
         const scenario65Income = document.getElementById('scenario-65-income');
+        const scenario65Shortfall = document.getElementById('scenario-65-shortfall');
         const scenario65Surplus = document.getElementById('scenario-65-surplus');
         
         const scenario67Years = document.getElementById('scenario-67-years');
         const scenario67Super = document.getElementById('scenario-67-super');
         const scenario67Income = document.getElementById('scenario-67-income');
+        const scenario67Shortfall = document.getElementById('scenario-67-shortfall');
         const scenario67Surplus = document.getElementById('scenario-67-surplus');
         
         const scenario70Years = document.getElementById('scenario-70-years');
         const scenario70Super = document.getElementById('scenario-70-super');
         const scenario70Income = document.getElementById('scenario-70-income');
+        const scenario70Shortfall = document.getElementById('scenario-70-shortfall');
         const scenario70Surplus = document.getElementById('scenario-70-surplus');
         
         const ttrAnalysis = document.getElementById('ttr-analysis');
@@ -2328,21 +2343,32 @@
                 if (superElement) superElement.textContent = formatCurrency(projectedSuper);
                 if (incomeElement) incomeElement.textContent = formatCurrency(totalRetirementIncome);
                 
-                // Handle shortfall/surplus display
-                if (shortfallElement && surplusElement) {
-                    // Reset both elements
-                    shortfallElement.style.display = 'none';
-                    surplusElement.style.display = 'none';
-                    
-                    // Show appropriate element
+                // FIXED: Properly handle both shortfall and surplus display for all scenarios
+                if (shortfallElement) {
                     if (shortfall > 0) {
                         shortfallElement.textContent = formatCurrency(shortfall);
                         shortfallElement.style.display = 'block';
                         shortfallElement.className = 'scenario-value shortfall';
-                    } else if (surplus > 0) {
+                        // Hide surplus element if it exists for this scenario
+                        if (surplusElement) {
+                            surplusElement.style.display = 'none';
+                        }
+                    } else {
+                        shortfallElement.style.display = 'none';
+                    }
+                }
+                
+                if (surplusElement) {
+                    if (surplus > 0) {
                         surplusElement.textContent = formatCurrency(surplus);
                         surplusElement.style.display = 'block';
                         surplusElement.className = 'scenario-value surplus';
+                        // Hide shortfall element if it exists for this scenario
+                        if (shortfallElement) {
+                            shortfallElement.style.display = 'none';
+                        }
+                    } else {
+                        surplusElement.style.display = 'none';
                     }
                 }
                 
