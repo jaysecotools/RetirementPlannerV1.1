@@ -2255,24 +2255,17 @@
                         // Continue growth with increased salary sacrifice
                         const ttrContribution = contribution * (1 + ttrData.salarySacrificePercent);
                         projectedSuper = projectedSuper * (1 + returnRate) + ttrContribution;
-                        
-                        // FIXED: Division 293 tax is separate liability, not deducted from super
-                        // Note: Division 293 tax is paid separately, not from super balance
                     }
                 } else {
                     // Standard accumulation using projection function
                     projectedSuper = projectSuperBalance(superBalance, contribution, yearsToRetirement, returnRate);
                 }
                 
-                // FIXED: Remove incorrect transfer balance cap during accumulation
-                // Transfer balance cap only applies when moving to retirement phase, not during accumulation
-                
                 // Apply downsizing if applicable
                 if (downsizingData.planned && scenarioAge >= downsizingData.downsizeAge) {
                     const downsizingProceeds = Math.max(0, downsizingData.downsizeValue - residenceValue);
                     if (downsizingProceeds > 0) {
                         // FIXED: Clarify downsizer contribution calculation
-                        // Each eligible person can contribute up to $300,000
                         const downsizerContribution = Math.min(AUSTRALIAN_RULES.DOWNSIZER_CONTRIBUTION_LIMIT, downsizingProceeds);
                         projectedSuper += downsizerContribution;
                     }
